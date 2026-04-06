@@ -1,0 +1,149 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: q1a
+      id: q1a
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: q1a
+        setup-command: gcc question1/q1.c
+        command: "./a.out < question1/test1.c"
+        input: ''
+        expected-output: |2-
+             1 auto
+             2 break
+             1 case
+             9 char
+             1 const
+             1 continue
+             1 default
+             3 else
+             3 for
+             9 if
+            16 int
+             6 return
+             2 sizeof
+             9 struct
+             1 unsigned
+             7 void
+             1 volatile
+             4 while
+        comparison-method: contains
+        timeout: 1
+        max-score: 8
+    - name: q1b
+      id: q1b
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: q1b
+        setup-command: gcc question1/q1.c
+        command: "./a.out < question1/test2.c"
+        input: ''
+        expected-output: |2-
+             1 break
+            14 char
+             4 else
+             3 for
+            10 if
+            12 int
+             7 return
+             1 sizeof
+            14 struct
+             8 void
+             2 while
+        comparison-method: contains
+        timeout: 1
+        max-score: 8
+    - name: q2a
+      id: q2a
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: q2a
+        setup-command: gcc question2/q2.c
+        command: "./a.out < question2/test1.txt"
+        input: ''
+        expected-output: |-
+          4 boo
+          3 hi
+          2 apple
+          1 cooper
+        comparison-method: contains
+        timeout: 1
+        max-score: 9
+    - name: q2b
+      id: q2b
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: q2b
+        setup-command: gcc question2/q2.c
+        command: "./a.out < question2/test2.txt"
+        input: ''
+        expected-output: |-
+          10 j
+          9 z
+          8 l
+          7 g
+          6 i
+          5 f
+          4 d
+          3 c
+          2 b
+          1 x
+        comparison-method: contains
+        timeout: 1
+        max-score: 9
+    - name: q3a
+      id: q3a
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: q3a
+        setup-command: gcc question3/q3.c
+        command: "./a.out"
+        input: |-
+          3
+          1 2 5
+          3
+          2 5 6
+        expected-output: 2 5
+        comparison-method: contains
+        timeout: 1
+        max-score: 8
+    - name: q3b
+      id: q3b
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: q3b
+        setup-command: gcc question3/q3.c
+        command: "./a.out"
+        input: |-
+          10
+          1 2 3 4 5 6 7 8 9 111
+          10
+          111 5 7 9 2 4 12 13 14 15
+        expected-output: 111 5 7 9 2 4
+        comparison-method: contains
+        timeout: 1
+        max-score: 8
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        Q1A_RESULTS: "${{steps.q1a.outputs.result}}"
+        Q1B_RESULTS: "${{steps.q1b.outputs.result}}"
+        Q2A_RESULTS: "${{steps.q2a.outputs.result}}"
+        Q2B_RESULTS: "${{steps.q2b.outputs.result}}"
+        Q3A_RESULTS: "${{steps.q3a.outputs.result}}"
+        Q3B_RESULTS: "${{steps.q3b.outputs.result}}"
+      with:
+        runners: q1a,q1b,q2a,q2b,q3a,q3b
