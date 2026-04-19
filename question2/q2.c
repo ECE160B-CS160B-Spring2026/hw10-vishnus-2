@@ -20,41 +20,39 @@ struct WordNode *word_insert(struct WordNode *root, const char *word) {
     int cmp;
 
     if (root == NULL) {
-        // first time seeing this word -- allocate a new node
         root = malloc(sizeof(struct WordNode));
         root->word  = strdup(word);
         root->count = 1;
         root->left  = root->right = NULL;
     } else if ((cmp = strcmp(word, root->word)) < 0) {
-        root->left  = word_insert(root->left,  word); // word comes before -- go left
+        root->left  = word_insert(root->left,  word);
     } else if (cmp > 0) {
-        root->right = word_insert(root->right, word); // word comes after -- go right
+        root->right = word_insert(root->right, word);
     } else {
-        root->count++; // word already exists, just increment
+        root->count++;
     }
     return root;
 }
 
-// words sharing the same count are stored in a linked list per node
+// words sharing the same count are linked together in a list per node
 struct WordList {
     char *word;
     struct WordList *next;
 };
 
-// each node holds a frequency count and all words that appeared that many times
+// each node holds a count and all words that appeared that many times
 struct CountNode {
     int count;
     struct WordList *words;
-    struct CountNode *left;  // left = higher counts (so in-order = descending)
+    struct CountNode *left;  // left = higher counts (descending in-order)
     struct CountNode *right; // right = lower counts
 };
 
 // count_insert -- inserts a (count, word) pair into the count BST
-// higher counts go left so in-order traversal gives descending frequency
+// higher counts go left so in-order traversal prints descending
 // weakness: no balancing -- same degeneration risk as the word BST
 struct CountNode *count_insert(struct CountNode *root, int count, const char *word) {
     if (root == NULL) {
-        // new count level -- create a node and start its word list
         root = malloc(sizeof(struct CountNode));
         root->count = count;
         root->left  = root->right = NULL;
@@ -64,11 +62,12 @@ struct CountNode *count_insert(struct CountNode *root, int count, const char *wo
         wl->next    = NULL;
         root->words = wl;
     } else if (count > root->count) {
-        root->left  = count_insert(root->left,  count, word); // higher -- go left
+        root->left  = count_insert(root->left,  count, word);
     } else if (count < root->count) {
-        root->right = count_insert(root->right, count, word); // lower -- go right
+        root->right = count_insert(root->right, count, word);
     } else {
-        // same count -- prepend word to this node's word list
+        // same count -- prepend to word list
+        // weakness: ties print in reverse insertion order since we prepend
         struct WordList *wl = malloc(sizeof(struct WordList));
         wl->word    = strdup(word);
         wl->next    = root->words;
@@ -77,8 +76,7 @@ struct CountNode *count_insert(struct CountNode *root, int count, const char *wo
     return root;
 }
 
-// build_count_tree -- in-order traversal of the word BST
-// feeds every (count, word) pair into the count BST
+// build_count_tree -- walks word BST in-order and feeds into count BST
 struct CountNode *build_count_tree(struct WordNode *wroot, struct CountNode *croot) {
     if (wroot == NULL) return croot;
     croot = build_count_tree(wroot->left,  croot);
@@ -88,7 +86,7 @@ struct CountNode *build_count_tree(struct WordNode *wroot, struct CountNode *cro
 }
 
 // print_tree -- in-order traversal of count BST
-// left subtree has higher counts, so this naturally prints descending
+// left = higher counts so this naturally prints descending
 void print_tree(struct CountNode *root) {
     if (root == NULL) return;
     print_tree(root->left);
@@ -97,10 +95,9 @@ void print_tree(struct CountNode *root) {
     print_tree(root->right);
 }
 
-// get_word -- reads the next alphabetic word from stdin, lowercased
+// get_word -- reads the next alphabetic word from stdin
 // skips non-alpha characters so punctuation and numbers are ignored
 // weakness: strips all non-alpha chars -- "don't" becomes "don" + "t"
-// weakness: doesn't skip string literals or comments
 int get_word(char *buf, int maxlen) {
     int c, i = 0;
 
@@ -109,12 +106,12 @@ int get_word(char *buf, int maxlen) {
         ;
     if (c == EOF) return 0;
 
-    buf[i++] = tolower(c); // normalize to lowercase for case-insensitive counting
+    buf[i++] = c; // no tolower -- preserve original case from input
     while (i < maxlen - 1 && isalpha(c = getchar()))
-        buf[i++] = tolower(c);
+        buf[i++] = c;
     buf[i] = '\0';
 
-    if (c != EOF) ungetc(c, stdin); // put back the char that ended the word
+    if (c != EOF) ungetc(c, stdin);
     return 1;
 }
 
@@ -123,18 +120,15 @@ int main(void) {
     struct WordNode  *wroot = NULL; // phase 1: count words
     struct CountNode *croot = NULL; // phase 2: sort by frequency
 
-    // phase 1 -- read all words and count them in the word BST
+    // phase 1 -- read all words and build the word BST
     while (get_word(word, MAXWORD))
         wroot = word_insert(wroot, word);
 
-    // phase 2 -- transfer counts into the count BST
+    // phase 2 -- transfer into count BST sorted by frequency
     croot = build_count_tree(wroot, croot);
 
-    // phase 3 -- print in descending frequency order
+    // phase 3 -- print descending by count
     print_tree(croot);
 
     return 0;
-    // weakness: all malloc'd memory is leaked on exit
-    // fine for a short-lived program, but add free_word_tree() / free_count_tree()
-    // if this were reused as a library or called in a loop
 }
